@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine.UI;
 public class SceneBreaker : MonoBehaviour
 {
-    [Header("Configuración del Juego")]
+     [Header("UI Elements")]
     public TextMeshProUGUI instructionText;
     public GameObject winPanel;
     public GameObject losePanel;
@@ -12,44 +12,40 @@ public class SceneBreaker : MonoBehaviour
     void Start()
     {
         ResetGame();
-        restartButton.onClick.AddListener(ResetGame);
+        if (restartButton != null)
+            restartButton.onClick.AddListener(ResetGame);
     }
 
-    public void CheckWinCondition(bool isPizza)
+    public void PlayerWon()
     {
-        if (isPizza)
+        if (instructionText != null)
+            instructionText.text = "¡GANASTE! Pizza > Anillo - Rompiste el cliché";
+        if (winPanel != null)
+            winPanel.SetActive(true);
+    }
+
+    public void PlayerLost()
+    {
+        if (instructionText != null)
+            instructionText.text = "¡PERDISTE! Caíste en el cliché del anillo";
+        if (losePanel != null)
+            losePanel.SetActive(true);
+    }
+
+    public void ResetGame()
+    {
+        if (instructionText != null)
+            instructionText.text = "Proponle matrimonio a la novia";
+        if (winPanel != null)
+            winPanel.SetActive(false);
+        if (losePanel != null)
+            losePanel.SetActive(false);
+        
+        // Reactivar y reposicionar objetos
+        DragDrop[] draggers = FindObjectsOfType<DragDrop>();
+        foreach (var dragger in draggers)
         {
-            WinGame();
-        }
-        else
-        {
-            LoseGame();
-        }
-    }
-
-    public void WinGame()
-    {
-        instructionText.text = "¡GANASTE! Rompiste el cliché con pizza 🍕";
-        winPanel.SetActive(true);
-    }
-
-    public void LoseGame()
-    {
-        instructionText.text = "¡PERDISTE! Caíste en el cliché del anillo 💍";
-        losePanel.SetActive(true);
-    }
-
-    void ResetGame()
-    {
-        instructionText.text = "Arrastra la PIZZA a la novia para romper el cliché";
-        winPanel.SetActive(false);
-        losePanel.SetActive(false);
-
-        // Reactivar todos los objetos arrastrables
-        DragDrop[] draggables = FindObjectsOfType<DragDrop>();
-        foreach (var draggable in draggables)
-        {
-            draggable.ResetToStart();
+            dragger.ResetPosition();
         }
     }
 }

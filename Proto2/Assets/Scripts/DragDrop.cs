@@ -3,30 +3,40 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 public class DragDrop : MonoBehaviour
-{ [Header("Configuración")]
+{   [Header("Configuración")]
     public bool isPizza = false;
     public Transform dropTarget; // Asignar la novia aquí
     
     private bool isDragging = false;
     private Vector3 startPosition;
-    private RectTransform rectTransform;
-
+    private Vector3 offset;
+    private SpriteRenderer spriteRenderer;
+    private bool isOverTarget = false;
     void Start()
     {
-        rectTransform = GetComponent<RectTransform>();
-        startPosition = rectTransform.position;
+        startPosition = transform.position;
+        spriteRenderer = GetComponent<SpriteRenderer>();
         
-        // Asegurar que sea clickeable
-        UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
-        if (img != null)
+        // Asegurar que tenga Collider
+        if (GetComponent<Collider2D>() == null)
         {
-            img.raycastTarget = true;
+            gameObject.AddComponent<BoxCollider2D>();
         }
+    }
 
-        // Asegurar que existe CanvasGroup
-        if (GetComponent<CanvasGroup>() == null)
+    void OnMouseDown()
+    {
+        if (!isDragging)
         {
-            gameObject.AddComponent<CanvasGroup>();
+            StartDrag();
+        }
+    }
+
+    void OnMouseUp()
+    {
+        if (isDragging)
+        {
+            EndDrag();
         }
     }
 
@@ -34,89 +44,94 @@ public class DragDrop : MonoBehaviour
     {
         if (isDragging)
         {
-            // Seguir el mouse
-            Vector3 mousePos = Input.mousePosition;
-            rectTransform.position = mousePos;
+            // Seguir el mouse en el mundo 2D
+            Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            mousePosition.z = 0;
+            transform.position = mousePosition + offset;
         }
-    }
-
-    // Estos métodos son necesarios para el Event Trigger
-    public void OnPointerDown(PointerEventData eventData)
-    {
-        StartDrag();
-    }
-
-    public void OnPointerUp(PointerEventData eventData)
-    {
-        EndDrag();
     }
 
     void StartDrag()
     {
         isDragging = true;
-        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
-        if (canvasGroup != null)
+        
+        // Calcular offset para que el objeto no salte al mouse
+        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mousePosition.z = 0;
+        offset = transform.position - mousePosition;
+        
+        // Efecto visual
+        if (spriteRenderer != null)
         {
-            canvasGroup.alpha = 0.6f;
-            canvasGroup.blocksRaycasts = false;
+            spriteRenderer.color = new Color(1, 1, 1, 0.7f);
         }
     }
 
     void EndDrag()
     {
         isDragging = false;
-        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
-        if (canvasGroup != null)
+        
+        // Restaurar efecto visual
+        if (spriteRenderer != null)
         {
-            canvasGroup.alpha = 1f;
-            canvasGroup.blocksRaycasts = true;
+            spriteRenderer.color = Color.white;
         }
-
+        
         CheckDrop();
     }
-
-    void CheckDrop()
+   void CheckDrop()
     {
-        if (dropTarget == null) return;
-
-        RectTransform targetRect = dropTarget.GetComponent<RectTransform>();
-        
-        // Calcular distancia entre el objeto y el target
-        float distance = Vector3.Distance(rectTransform.position, targetRect.position);
-        
-        // Si está lo suficientemente cerca, es un drop válido
-        if (distance < 150f) // Ajusta este valor según necesites
+        if (isOverTarget)
         {
+            // Éxito - objeto soltado sobre la novia
             if (isPizza)
             {
                 // GANAR - Pizza en la novia
-                FindObjectOfType<SceneBreaker>().WinGame();
+                FindObjectOfType<SceneBreaker>().PlayerWon();
             }
             else
             {
                 // PERDER - Anillo en la novia
-                FindObjectOfType<SceneBreaker>().LoseGame();
+                FindObjectOfType<SceneBreaker>().PlayerLost();
             }
             
             // Mover objeto al centro de la novia
-            rectTransform.position = targetRect.position;
+            transform.position = dropTarget.position;
         }
         else
         {
             // Volver a posición inicial
-            ResetToStart();
+            ResetPosition();
         }
     }
 
-    public void ResetToStart()
+    // ESTOS MÉTODOS SE LLAMAN AUTOMÁTICAMENTE CON TRIGGERS
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.transform == dropTarget)
+        {
+            isOverTarget = true;
+            Debug.Log("Entró en la novia");
+        }
+    }
+
+    void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.transform == dropTarget)
+        {
+            isOverTarget = false;
+            Debug.Log("Salió de la novia");
+        }
+    }
+
+    public void ResetPosition()
     {
         isDragging = false;
-        rectTransform.position = startPosition;
-        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
-        if (canvasGroup != null)
+        transform.position = startPosition;
+        
+        if (spriteRenderer != null)
         {
-            canvasGroup.alpha = 1f;
-            canvasGroup.blocksRaycasts = true;
+            spriteRenderer.color = Color.white;
         }
     }
 }
