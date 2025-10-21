@@ -1,22 +1,26 @@
-using Microsoft.Unity.VisualStudio.Editor;
+
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+
+
 public class DragDrop : MonoBehaviour
-{   [Header("Configuración")]
+{
+    [Header("Configuración")]
     public bool isPizza = false;
     public Transform dropTarget; // Asignar la novia aquí
-    
+
     private bool isDragging = false;
     private Vector3 startPosition;
     private Vector3 offset;
     private SpriteRenderer spriteRenderer;
     private bool isOverTarget = false;
+
     void Start()
     {
         startPosition = transform.position;
         spriteRenderer = GetComponent<SpriteRenderer>();
-        
+
         // Asegurar que tenga Collider
         if (GetComponent<Collider2D>() == null)
         {
@@ -45,8 +49,7 @@ public class DragDrop : MonoBehaviour
         if (isDragging)
         {
             // Seguir el mouse en el mundo 2D
-            Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            mousePosition.z = 0;
+            Vector3 mousePosition = GetMouseWorldPosition();
             transform.position = mousePosition + offset;
         }
     }
@@ -54,12 +57,12 @@ public class DragDrop : MonoBehaviour
     void StartDrag()
     {
         isDragging = true;
-        
+        isOverTarget = false;
+
         // Calcular offset para que el objeto no salte al mouse
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mousePosition.z = 0;
+        Vector3 mousePosition = GetMouseWorldPosition();
         offset = transform.position - mousePosition;
-        
+
         // Efecto visual
         if (spriteRenderer != null)
         {
@@ -70,31 +73,36 @@ public class DragDrop : MonoBehaviour
     void EndDrag()
     {
         isDragging = false;
-        
+
         // Restaurar efecto visual
         if (spriteRenderer != null)
         {
             spriteRenderer.color = Color.white;
         }
-        
+
         CheckDrop();
     }
-   void CheckDrop()
+
+    void CheckDrop()
     {
-        if (isOverTarget)
+        if (isOverTarget && dropTarget != null)
         {
             // Éxito - objeto soltado sobre la novia
             if (isPizza)
             {
                 // GANAR - Pizza en la novia
-                FindObjectOfType<SceneBreaker>().PlayerWon();
+                SceneBreaker sceneBreaker = FindObjectOfType<SceneBreaker>();
+                if (sceneBreaker != null)
+                    sceneBreaker.PlayerWon();
             }
             else
             {
                 // PERDER - Anillo en la novia
-                FindObjectOfType<SceneBreaker>().PlayerLost();
+                SceneBreaker sceneBreaker = FindObjectOfType<SceneBreaker>();
+                if (sceneBreaker != null)
+                    sceneBreaker.PlayerLost();
             }
-            
+
             // Mover objeto al centro de la novia
             transform.position = dropTarget.position;
         }
@@ -108,7 +116,7 @@ public class DragDrop : MonoBehaviour
     // ESTOS MÉTODOS SE LLAMAN AUTOMÁTICAMENTE CON TRIGGERS
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.transform == dropTarget)
+        if (dropTarget != null && other.transform == dropTarget)
         {
             isOverTarget = true;
             Debug.Log("Entró en la novia");
@@ -117,7 +125,7 @@ public class DragDrop : MonoBehaviour
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.transform == dropTarget)
+        if (dropTarget != null && other.transform == dropTarget)
         {
             isOverTarget = false;
             Debug.Log("Salió de la novia");
@@ -127,11 +135,24 @@ public class DragDrop : MonoBehaviour
     public void ResetPosition()
     {
         isDragging = false;
+        isOverTarget = false;
         transform.position = startPosition;
-        
+
         if (spriteRenderer != null)
         {
             spriteRenderer.color = Color.white;
         }
+    }
+
+    // Método seguro para obtener la posición del mouse
+    private Vector3 GetMouseWorldPosition()
+    {
+        if (Camera.main != null)
+        {
+            Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            mousePosition.z = 0;
+            return mousePosition;
+        }
+        return Vector3.zero;
     }
 }

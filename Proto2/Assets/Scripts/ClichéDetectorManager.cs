@@ -6,7 +6,7 @@ public class ClichéDetectorManager : MonoBehaviour
 {
     [Header("UI Elements")]
     public TextMeshProUGUI sceneDescriptionText;
-    public InputField playerInputField;
+    public TMP_InputField playerInputField;
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI timerText;
     public Button submitButton;
